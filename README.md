@@ -1,2 +1,5 @@
-# group-3
-Implementation of group 3
+# MEME protocol implementation group-3
+- Sebastian Voigt
+- Andreas Ly
+- Nail Özmen
+
