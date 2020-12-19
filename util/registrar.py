@@ -1,5 +1,7 @@
-from threading import Lock, Event
+from threading import Event, Lock
+
 from util.common import create_logger
+
 
 class Registrar:
     """Static class that provides the option to register threads and wait
