@@ -7,7 +7,7 @@ class Registrar:
     registered_threads = []
     registered_thread_lock = Lock()
 
-    shutdown_requested = False
+    shutdown_requested_flag = False
     shutdown_requested_lock = Lock()
 
     shutdown_event = Event()
@@ -16,13 +16,13 @@ class Registrar:
     @classmethod
     def register_thread(cls, thread):
         cls.registered_thread_lock.acquire()
-        cls.register_thread.append(thread)
+        cls.registered_threads.append(thread)
         cls.registered_thread_lock.release()
 
     @classmethod
     def deregister_thread(cls, thread):
         cls.registered_thread_lock.acquire()
-        cls.register_thread.remove(thread)
+        cls.registered_threads.remove(thread)
         length = len(cls.registered_threads)
         cls.registered_thread_lock.release()
 
@@ -32,18 +32,19 @@ class Registrar:
     @classmethod
     def threads_registered(cls):
         cls.registered_thread_lock.acquire()
-        length = len(cls.register_thread)
+        length = len(cls.registered_threads)
         cls.registered_thread_lock.release()
         return length
 
     @classmethod
     def wait_for_shutdown(cls):
-        Event.wait(cls.shutdown_event)
+        if cls.threads_registered() > 0:
+            Event.wait(cls.shutdown_event)
 
     @classmethod
     def request_shutdown(cls):
         cls.shutdown_requested_lock.acquire()
-        cls.shutdown_requested = True
+        cls.shutdown_requested_flag = True
         cls.shutdown_requested_lock.release()
 
     @classmethod
@@ -51,6 +52,6 @@ class Registrar:
         cls.shutdown_requested_lock.acquire()
         # ! 'fun'-fact, apparently this does not return a reference and is
         # ! therefor 'safe'¯\_(ツ)_/¯
-        shutdown_requested = cls.shutdown_requested
+        shutdown_requested = cls.shutdown_requested_flag
         cls.shutdown_requested_lock.release()
         return shutdown_requested
