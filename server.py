@@ -14,7 +14,7 @@ def shutdown_hook(sig, frame):
 
 def wait_for_tcp_connection():
     tcp_host = "0.0.0.0"
-    tcp_port = 8080
+    tcp_port = 2000
     with socket(AF_INET, SOCK_STREAM) as tcp_server:
         while not Registrar.shutdown_requested():
             tcp_server.bind((tcp_host, tcp_port))
