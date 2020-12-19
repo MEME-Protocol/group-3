@@ -1,22 +1,36 @@
-from threading import Thread, Lock, Event
+from pykka import ThreadingActor
+from dataclasses import dataclass
 from socket import timeout
 from util.registrar import Registrar
 from util.common import create_logger, json_size_struct
 from struct import error
+from socket import socket
 
-class TcpServerConnection(Thread):
+@dataclass
+class PoisonPill:
+    pass
+@dataclass
+class NewConnection:
+    connection: socket
+
+class TcpServerConnection(ThreadingActor):
     log = create_logger("tcp_connection_logger")
 
-    def __init__(self, connection):
+    def __init__(self):
         super().__init__()
-        self.daemon = True
-        self.connection = connection
 
-        Registrar.register_thread(self)
+    def on_receive(self, message):
+        if type(message) is PoisonPill:
+            Registrar.deregister_thread()
+            self.log.info("Received PoisonPill, unregistered Actor from Registrar")
+        elif type(message) is NewConnection:
+            self.handle_connection(message.connection)
+        else:
+            self.log.warn(f"Cannot process messages of type {type(message)}")
 
-    def run(self):
+    def handle_connection(self, connection):
         try:
-            buffer = self.connection.recv(4)
+            buffer = connection.recv(4)
             size = json_size_struct.unpack(buffer)[0]
         except error:
             self.log.error("Could not unpack json size")
@@ -27,7 +41,5 @@ class TcpServerConnection(Thread):
             return
 
         self.log.info(f"Trying to receive and unpack {size}b of json data")
-        json_buffer = self.connection.recv(size).decode("utf-8")
+        json_buffer = connection.recv(size).decode("utf-8")
         self.log.info(f"Received: {json_buffer}")
-
-        Registrar.deregister_thread(self)

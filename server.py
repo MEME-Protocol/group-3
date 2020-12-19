@@ -3,15 +3,19 @@ import signal
 import sys
 from threading import Thread
 from util.registrar import Registrar
-from model.tcp_server_connection import TcpServerConnection
+from model.tcp_server_connection import TcpServerConnection, NewConnection, PoisonPill
 from socket import setdefaulttimeout, socket, SOCK_STREAM, AF_INET, SOCK_DGRAM
 from util.common import create_logger
 
+tcp_actor_ref = TcpServerConnection().start()
+Registrar.register_thread()
 
 def shutdown_hook(sig, frame):
     print("Shutdown requested")
     Registrar.request_shutdown()
+    tcp_actor_ref.tell(PoisonPill())
     Registrar.wait_for_shutdown()
+    tcp_actor_ref.stop()
     sys.exit(0)
 
 def wait_for_tcp_connection():
@@ -22,10 +26,12 @@ def wait_for_tcp_connection():
         tcp_server.bind((tcp_host, tcp_port))
         tcp_server.listen()
         log.info(f"Started tcp server at {tcp_host}:{tcp_port}")
+
         while not Registrar.shutdown_requested():
             connection, _ = tcp_server.accept()
             log.info("Server accepted connection")
-            TcpServerConnection(connection).start()
+            tcp_actor_ref.tell(NewConnection(connection))
+
     log.info("Stopped listening to tcp-connections")
 
 setdefaulttimeout(20)
