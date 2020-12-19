@@ -21,7 +21,7 @@ def wait_for_tcp_connection():
             tcp_server.listen()
 
             connection, _ = tcp_server.accept()
-            TcpConnectionThread(connection).start()
+            TcpServerConnection(connection).start()
 
 setdefaulttimeout(20)
 
