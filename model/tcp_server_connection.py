@@ -1,8 +1,10 @@
-from threading import Thread, Lock, Event
 from socket import timeout
-from util.registrar import Registrar
-from util.common import create_logger, json_size_struct
 from struct import error
+from threading import Event, Lock, Thread
+
+from util.common import create_logger, json_size_struct
+from util.registrar import Registrar
+
 
 class TcpServerConnection(Thread):
     log = create_logger("tcp_connection_logger")

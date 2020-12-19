@@ -1,8 +1,9 @@
 #! /usr/bin/python3.9
-from util.common import json_size_struct
-from model.register import Register
-from socket import setdefaulttimeout, socket, SOCK_STREAM, AF_INET, SOCK_DGRAM
+from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket
 from struct import Struct
+
+from model.register import Register
+from util.common import json_size_struct
 
 with socket(AF_INET, SOCK_STREAM) as client_socket:
     tcp_host = "127.0.0.1"

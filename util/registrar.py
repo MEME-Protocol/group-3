@@ -1,4 +1,5 @@
-from threading import Lock, Event
+from threading import Event, Lock
+
 
 class Registrar:
     """Static class that provides the option to register threads and wait

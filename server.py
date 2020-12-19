@@ -1,11 +1,12 @@
 #! /usr/bin/python3.9
 import signal
 import sys
+from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket
 from threading import Thread
-from util.registrar import Registrar
+
 from model.tcp_server_connection import TcpServerConnection
-from socket import setdefaulttimeout, socket, SOCK_STREAM, AF_INET, SOCK_DGRAM
 from util.common import create_logger
+from util.registrar import Registrar
 
 
 def shutdown_hook(sig, frame):
@@ -13,6 +14,7 @@ def shutdown_hook(sig, frame):
     Registrar.request_shutdown()
     Registrar.wait_for_shutdown()
     sys.exit(0)
+
 
 def wait_for_tcp_connection():
     log = create_logger("tcp_connection_thread")
@@ -27,6 +29,7 @@ def wait_for_tcp_connection():
             log.info("Server accepted connection")
             TcpServerConnection(connection).start()
     log.info("Stopped listening to tcp-connections")
+
 
 setdefaulttimeout(20)
 
