@@ -1,6 +1,7 @@
 from threading import Thread, Lock, Event
 from socket import timeout
 from util.registrar import Registrar
+from util.common import json_size_struct
 from struct import Struct, error
 
 class TcpServerConnection(Thread):
@@ -8,27 +9,23 @@ class TcpServerConnection(Thread):
         super().__init__()
         self.daemon = True
         self.connection = connection
-        # u32
-        self.json_size_struct = Struct("I")
 
         Registrar.register_thread(self)
 
     def run(self):
-        while not Registrar.shutdown_requested():
-            try:
-                size = self.json_size_struct.unpack(self.connection.recv(4))
-            except error:
-                print("Could not unpack json size")
-                continue
-            except timeout:
-                print("Recieved timeout")
-                continue
+        try:
+            buffer = self.connection.recv(4)
+            size = json_size_struct.unpack(buffer)[0]
+        except error:
+            print("Could not unpack json size")
+            exit(0)
+            return
+        except timeout:
+            print("Received timeout")
+            return
 
-            json_buffer = self.connection.recv(size)
-            while (buffer_size := len(json_buffer)) < size:
-                # todo: does this work / is this necessary ?
-                json_buffer += self.connection.recv(size - buffer_size)
-
-            print(json_buffer.decode("utf-8"))
+        print(f"Trying to receive and unpack {size}b of json data")
+        json_buffer = self.connection.recv(size).decode("utf-8")
+        print(f"Received: {json_buffer}")
 
         Registrar.deregister_thread(self)
