@@ -1,18 +1,17 @@
 import socket
-from select import select
 import struct
+from select import select
 from threading import Event, Lock, Thread
-from model.unregister import Unregister
-from model.register import Register
-from model.user_list import User
 
 from util.common import create_logger, json_size_struct
 from util.registrar import Registrar
 
+from model.register import Register
+from model.unregister import Unregister
+from model.user_list import User
+
 
 class TcpServerConnection(Thread):
-
-
     def __init__(self, connection):
         super().__init__()
         self.daemon = True
@@ -42,13 +41,13 @@ class TcpServerConnection(Thread):
 
             if type(command) is Unregister:
                 user = Registrar.retrieve_user(command.nickname)
-                Registrar.deregister_user(user)
+                Registrar.deregister_user(user, self.connection)
                 self.log.info(f"Deregistered user {user}")
                 self.log.info("Closing connection to client")
                 break
             elif type(command) is Register:
                 user = User(command.nickname, command.ip, command.port)
-                Registrar.register_user(user)
+                Registrar.register_user(user, self.connection)
                 self.log.info(f"Registered user {user}")
             else:
                 self.log.warn(f"Can not execute command {command}")

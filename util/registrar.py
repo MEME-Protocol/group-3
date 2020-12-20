@@ -1,5 +1,7 @@
 from threading import Event, Lock
+
 from util.common import create_logger
+from model.tcp_server_outgoing import TcpOutgoingActor, AddedUser, RemovedUser
 
 
 class Registrar:
@@ -7,6 +9,7 @@ class Registrar:
     until all threads are de-registered (and therefor done) using
     wait_for_shutdown()"""
     log = create_logger("Registrar")
+    outgoing_actor = TcpOutgoingActor().start()
 
     registered_threads = 0
     overall_counter = 0
@@ -22,11 +25,12 @@ class Registrar:
     Event.clear(shutdown_event)
 
     @classmethod
-    def register_user(cls, user):
+    def register_user(cls, user, connection):
         ret = None
         cls.registered_users_lock.acquire()
         if user not in cls.registered_users:
             cls.log.info(f"User ({user}) successfully registered")
+            cls.outgoing_actor.tell(AddedUser(user, connection))
             cls.registered_users.append(user)
             ret = user
         else:
@@ -35,10 +39,11 @@ class Registrar:
         return ret
 
     @classmethod
-    def deregister_user(cls, user):
+    def deregister_user(cls, user, connection):
         cls.registered_users_lock.acquire()
         if user in cls.registered_users:
             cls.log.info(f"Successfully unregistered user {user}")
+            cls.outgoing_actor.tell(RemovedUser(user, connection))
             cls.registered_users.remove(user)
         else:
             cls.log.info(f"Could not unregistered user {user} - not registered")
@@ -81,6 +86,7 @@ class Registrar:
     def wait_for_shutdown(cls):
         if cls.threads_registered() > 0:
             Event.wait(cls.shutdown_event, 30)
+        cls.outgoing_actor.stop()
 
     @classmethod
     def request_shutdown(cls):
