@@ -45,6 +45,13 @@ class Registrar:
         cls.registered_users_lock.release()
 
     @classmethod
+    def retrieve_user(cls, name):
+        cls.registered_users_lock.acquire()
+        user = [user for user in cls.registered_users if user.nickname == name][0]
+        cls.registered_users_lock.release()
+        return user
+
+    @classmethod
     def register_thread(cls):
         cls.registered_thread_lock.acquire()
         cls.registered_threads += 1
