@@ -3,6 +3,7 @@ from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket
 from struct import Struct
 
 from model.register import Register
+from model.unregister import Unregister
 from util.common import json_size_struct
 
 with socket(AF_INET, SOCK_STREAM) as client_socket:
@@ -12,6 +13,16 @@ with socket(AF_INET, SOCK_STREAM) as client_socket:
     client_socket.connect((tcp_host, tcp_port))
     print("Client connected to server")
 
-    json = Register("torsten", "127.0.0.1", 5000).to_json().encode("utf-8")
+    json_register = Register("torsten", "127.0.0.1", 5000).to_json().encode("utf-8")
 
-    client_socket.sendall(json_size_struct.pack(len(json)) + json)
+    client_socket.sendall(json_size_struct.pack(len(json_register)) + json_register)
+
+    client_socket.sendall(json_size_struct.pack(len(" ".encode("utf-8"))) + " ".encode("utf-8"))
+
+    client_socket.sendall(json_size_struct.pack(len("{}".encode("utf-8"))) + "{}".encode("utf-8"))
+
+    client_socket.sendall(
+        json_size_struct.pack(len("""{"json": "nein"}""".encode("utf-8"))) + """{"json": "nein"}""".encode("utf-8"))
+
+    json_unregister = Unregister("torsten").to_json().encode("utf-8")
+    client_socket.sendall(json_size_struct.pack(len(json_unregister)) + json_unregister)
