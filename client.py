@@ -5,6 +5,7 @@ from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket
 from struct import Struct
 from threading import Thread
 
+from model.client.input_actor import InputActor
 from model.client.client_actor import ClientActor
 from model.client.tcp_listener import TcpListener
 from model.register import Register
@@ -23,7 +24,9 @@ if user_port < 50000 or user_port > 59999:
 client_socket = socket(AF_INET, SOCK_STREAM)
 client_socket.connect((tcp_host, tcp_port))
 
-actor = ClientActor()
+input_actor = InputActor()
+input_actor.start()
+actor = ClientActor(input_actor)
 actor.start()
 TcpListener(client_socket, actor).start()
 

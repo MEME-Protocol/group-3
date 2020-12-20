@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from threading import Lock, Thread
 
+from model.client.input_actor import InputActor, NewUser, UserLoggedOut
 from model.user_list import UserList
 from util.common import create_logger
 
@@ -17,12 +18,13 @@ class UserUpdate:
 """Handles incoming message in the order that they are received.
 Should handle everything from the udp and tcp ports."""
 class ClientActor(Thread):
-    def __init__(self):
+    def __init__(self, input_actor: InputActor):
         super().__init__()
         self.log = create_logger("ClientActor", client=True)
         self.messages = []
         self.messages_lock = Lock()
         self.daemon = True
+        self.input_actor = input_actor
 
     def run(self):
         while True:
@@ -52,6 +54,12 @@ class ClientActor(Thread):
         if message_type == IncomingMessage:
             self.log.info(f"Incoming message from {message.user_name}: {message.message}")
         elif message_type == UserUpdate:
-            self.log.info(f"Added ({message.user_list})")
+            self.log.info(f"User update ({message.user_list})")
+            added_users = message.user_list.users.added
+            removed_users = message.user_list.users.removed
+            for user in added_users:
+                self.input_actor.tell(NewUser(user))
+            for user in removed_users:
+                self.input_actor.tell(UserLoggedOut(user))
         else:
             self.log.warn(f"Cannot handle messages of type ({message_type})")
