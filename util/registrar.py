@@ -30,7 +30,7 @@ class Registrar:
         cls.registered_users_lock.acquire()
         if user not in cls.registered_users:
             cls.log.info(f"User ({user}) successfully registered")
-            cls.outgoing_actor.tell(AddedUser(user, connection))
+            cls.outgoing_actor.tell(AddedUser(user, connection, cls.registered_users))
             cls.registered_users.append(user)
             ret = user
         else:
