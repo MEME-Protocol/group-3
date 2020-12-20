@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from socket import socket
 from typing import List
 
-import pykka
+from threading import Thread, Lock
 from model.user_list import AddedRemovedUsers, User, UserList
 from util.common import create_logger, json_size_struct
 
@@ -18,11 +18,33 @@ class RemovedUser:
     user: User
     connection: socket
 
-class TcpOutgoingActor(pykka.ThreadingActor):
+class TcpOutgoingActor(Thread):
     def __init__(self):
         super().__init__()
         self.log = create_logger("TcpOutgoingActor")
         self.connections = []
+        self.daemon = True
+
+        self.messages = []
+        self.messages_lock = Lock()
+
+    def run(self):
+        while True:
+            if (message := self.get_message()):
+                self.on_receive(message)
+
+    def tell(self, message):
+        self.messages_lock.acquire()
+        self.messages.append(message)
+        self.messages_lock.release()
+
+    def get_message(self):
+        message = None
+        self.messages_lock.acquire()
+        if len(self.messages) > 0:
+            message = self.messages.pop()
+        self.messages_lock.release()
+        return message
 
     def on_receive(self, message):
         message_type = type(message)
@@ -51,7 +73,7 @@ class TcpOutgoingActor(pykka.ThreadingActor):
                 self.log.info("Sending data")
                 connection.sendall(user_list_size + user_list)
 
-            new_user_message = UserList(AddedRemovedUsers(message.registered_users, []).to_json().encode("utf-8"))
+            new_user_message = UserList(AddedRemovedUsers(message.registered_users, [])).to_json().encode("utf-8")
             message.connection.sendall(json_size_struct.pack(len(new_user_message)) + new_user_message)
 
             self.log.info("Adding new connection")

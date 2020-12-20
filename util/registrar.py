@@ -9,7 +9,8 @@ class Registrar:
     until all threads are de-registered (and therefor done) using
     wait_for_shutdown()"""
     log = create_logger("Registrar")
-    outgoing_actor = TcpOutgoingActor().start()
+    outgoing_actor = TcpOutgoingActor()
+    outgoing_actor.start()
 
     registered_threads = 0
     overall_counter = 0
