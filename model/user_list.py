@@ -16,7 +16,7 @@ class User:
 @dataclass
 class AddedRemovedUsers:
     added: List[User]
-    removed: List[str]
+    removed: List[User]
 
 
 @dataclass_json

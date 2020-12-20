@@ -38,7 +38,7 @@ class TcpListener(Thread):
             if user_list:
                 self.client_actor.tell(UserUpdate(user_list))
             else:
-                self.error("Could not parse message")
+                self.log.error("Could not parse message")
 
     def parse_message(self, message):
         parsed_command = None

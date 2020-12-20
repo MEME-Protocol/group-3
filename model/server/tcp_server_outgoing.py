@@ -54,7 +54,7 @@ class TcpOutgoingActor(Thread):
 
             self.log.info("Sharing closed connection")
             user_list = UserList(
-                AddedRemovedUsers([], [message.user.nickname])
+                AddedRemovedUsers([], [message.user])
             ).to_json().encode("utf-8")
             user_list_size = json_size_struct.pack(len(user_list))
 
