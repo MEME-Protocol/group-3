@@ -1,10 +1,13 @@
 from threading import Event, Lock
+from util.common import create_logger
 
 
 class Registrar:
     """Static class that provides the option to register threads and wait
     until all threads are de-registered (and therefor done) using
     wait_for_shutdown()"""
+    log = create_logger("Registrar")
+
     registered_threads = 0
     overall_counter = 0
     registered_thread_lock = Lock()
@@ -12,8 +15,34 @@ class Registrar:
     shutdown_requested_flag = False
     shutdown_requested_lock = Lock()
 
+    registered_users = []
+    registered_users_lock = Lock()
+
     shutdown_event = Event()
     Event.clear(shutdown_event)
+
+    @classmethod
+    def register_user(cls, user):
+        ret = None
+        cls.registered_users_lock.acquire()
+        if user not in cls.registered_users:
+            cls.log.info(f"User ({user}) successfully registered")
+            cls.registered_users.append(user)
+            ret = user
+        else:
+            cls.log.info(f"User ({user}) is already registered")
+        cls.registered_users_lock.release()
+        return ret
+
+    @classmethod
+    def deregister_user(cls, user):
+        cls.registered_users_lock.acquire()
+        if user in cls.registered_users:
+            cls.log(f"Successfully unregistered user {user}")
+            cls.registered_users.remove(user)
+        else:
+            cls.log(f"Could not unregistered user {user} - not registered")
+        cls.registered_users_lock.release()
 
     @classmethod
     def register_thread(cls):
