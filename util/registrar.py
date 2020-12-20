@@ -40,7 +40,7 @@ class Registrar:
     @classmethod
     def wait_for_shutdown(cls):
         if cls.threads_registered() > 0:
-            Event.wait(cls.shutdown_event)
+            Event.wait(cls.shutdown_event, 30)
 
     @classmethod
     def request_shutdown(cls):
