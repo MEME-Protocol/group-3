@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from socket import socket
-import pykka
-from util.common import create_logger, json_size_struct
 
-from model.user_list import User, UserList, AddedRemovedUsers
+import pykka
+from model.user_list import AddedRemovedUsers, User, UserList
+from util.common import create_logger, json_size_struct
 
 
 @dataclass

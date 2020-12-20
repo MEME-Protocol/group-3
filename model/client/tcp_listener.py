@@ -1,14 +1,19 @@
-from threading import Thread
-from util.common import create_logger, json_size_struct
 import socket
 import struct
+from threading import Thread
+
+from model.client.client_actor import UserUpdate
+from model.user_list import UserList
+from util.common import create_logger, json_size_struct
+
 
 class TcpListener(Thread):
-    def __init__(self, connection):
+    def __init__(self, connection, client_actor):
         super().__init__()
         self.connection = connection
         self.daemon = True
         self.log = create_logger("TcpListener")
+        self.client_actor = client_actor
 
     def run(self):
         while True:
@@ -26,4 +31,17 @@ class TcpListener(Thread):
                 continue
 
             message = self.connection.recv(json_size).decode("utf-8")
-            self.log.info(message)
+            user_list = self.parse_message(message)
+
+            if user_list:
+                self.client_actor.tell(UserUpdate(user_list))
+            else:
+                self.error("Could not parse message")
+
+    def parse_message(self, message):
+        parsed_command = None
+        try:
+            parsed_command = UserList.from_json(message)
+        except (KeyError, ValueError):
+            self.log.debug("Command could not be parsed as Unregister command")
+        return parsed_command
