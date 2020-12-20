@@ -2,6 +2,9 @@ import socket
 from select import select
 import struct
 from threading import Event, Lock, Thread
+from model.unregister import Unregister
+from model.register import Register
+from model.user_list import UserList
 
 from util.common import create_logger, json_size_struct
 from util.registrar import Registrar
@@ -14,6 +17,7 @@ class TcpServerConnection(Thread):
         super().__init__()
         self.daemon = True
         self.connection = connection
+        self.connection.settimeout(2)
 
         Registrar.register_thread()
 
@@ -28,18 +32,25 @@ class TcpServerConnection(Thread):
                 self.log.error("Could not unpack json size")
                 continue
             except socket.error:
-                self.log.error("Socket error")
-                continue
-            except socket.timeout:
-                self.log.debug("Received timeout while waiting for package")
+                self.log.debug("Socket error/timeout")
                 continue
 
             self.log.debug(f"Trying to receive and unpack {size}b of json data")
-            json_buffer = b""
 
-            json_buffer += self.connection.recv(size)
-
-            self.log.info(f"Received: {json_buffer.decode('utf-8')}")
+            json_buffer = self.connection.recv(size).decode('utf-8')
+            self.log.info(f"Received: {self.parse_command(json_buffer)}")
 
         self.log.info("Connection closed, client disconnected")
         Registrar.deregister_thread()
+
+    def parse_command(self, command: str):
+        parsed_command = None
+        try:
+            parsed_command = Unregister.from_json(command)
+        except (KeyError, ValueError):
+            self.log.debug("Command could not be parsed as Unregister command")
+        try:
+            parsed_command = Register.from_json(command)
+        except (KeyError, ValueError):
+            self.log.debug("Command could not be parsed as Register command")
+        return parsed_command
