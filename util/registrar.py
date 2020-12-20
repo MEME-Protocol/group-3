@@ -5,7 +5,7 @@ class Registrar:
     """Static class that provides the option to register threads and wait
     until all threads are de-registered (and therefor done) using
     wait_for_shutdown()"""
-    registered_threads = []
+    registered_threads = 0
     registered_thread_lock = Lock()
 
     shutdown_requested_flag = False
@@ -15,16 +15,16 @@ class Registrar:
     Event.clear(shutdown_event)
 
     @classmethod
-    def register_thread(cls, thread):
+    def register_thread(cls):
         cls.registered_thread_lock.acquire()
-        cls.registered_threads.append(thread)
+        cls.registered_threads += 1
         cls.registered_thread_lock.release()
 
     @classmethod
-    def deregister_thread(cls, thread):
+    def deregister_thread(cls):
         cls.registered_thread_lock.acquire()
-        cls.registered_threads.remove(thread)
-        length = len(cls.registered_threads)
+        cls.registered_threads -= 1
+        length = cls.registered_threads
         cls.registered_thread_lock.release()
 
         if length <= 0:
@@ -33,7 +33,7 @@ class Registrar:
     @classmethod
     def threads_registered(cls):
         cls.registered_thread_lock.acquire()
-        length = len(cls.registered_threads)
+        length = cls.registered_threads
         cls.registered_thread_lock.release()
         return length
 
