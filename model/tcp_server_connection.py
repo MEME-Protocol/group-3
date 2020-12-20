@@ -1,5 +1,6 @@
-from socket import timeout
-from struct import error
+import socket
+from select import select
+import struct
 from threading import Event, Lock, Thread
 
 from util.common import create_logger, json_size_struct
@@ -14,22 +15,31 @@ class TcpServerConnection(Thread):
         self.daemon = True
         self.connection = connection
 
-        Registrar.register_thread(self)
+        Registrar.register_thread()
 
     def run(self):
-        try:
-            buffer = self.connection.recv(4)
-            size = json_size_struct.unpack(buffer)[0]
-        except error:
-            self.log.error("Could not unpack json size")
-            exit(0)
-            return
-        except timeout:
-            self.log.error("Received timeout")
-            return
+        while not Registrar.shutdown_requested():
+            try:
+                buffer = self.connection.recv(4)
+                if len(buffer) == 0:
+                    break
+                size = json_size_struct.unpack(buffer)[0]
+            except struct.error:
+                self.log.error("Could not unpack json size")
+                continue
+            except socket.error:
+                self.log.error("Socket error")
+                continue
+            except socket.timeout:
+                self.log.debug("Received timeout while waiting for package")
+                continue
 
-        self.log.info(f"Trying to receive and unpack {size}b of json data")
-        json_buffer = self.connection.recv(size).decode("utf-8")
-        self.log.info(f"Received: {json_buffer}")
+            self.log.debug(f"Trying to receive and unpack {size}b of json data")
+            json_buffer = b""
 
-        Registrar.deregister_thread(self)
+            json_buffer += self.connection.recv(size)
+
+            self.log.info(f"Received: {json_buffer.decode('utf-8')}")
+
+        self.log.info("Connection closed, client disconnected")
+        Registrar.deregister_thread()
