@@ -7,6 +7,8 @@ from model.user_list import UserList
 from util.common import create_logger, json_size_struct
 
 
+"""Handles listening on the tcp port. Messages on this ports are server-side
+messages when a user registers or de-registers"""
 class TcpListener(Thread):
     def __init__(self, connection, client_actor):
         super().__init__()

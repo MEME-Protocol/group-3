@@ -14,6 +14,8 @@ class IncomingMessage:
 class UserUpdate:
     user_list: UserList
 
+"""Handles incoming message in the order that they are received.
+Should handle everything from the udp and tcp ports."""
 class ClientActor(Thread):
     def __init__(self):
         super().__init__()
