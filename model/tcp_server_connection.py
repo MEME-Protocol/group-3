@@ -4,7 +4,7 @@ import struct
 from threading import Event, Lock, Thread
 from model.unregister import Unregister
 from model.register import Register
-from model.user_list import UserList
+from model.user_list import User
 
 from util.common import create_logger, json_size_struct
 from util.registrar import Registrar
@@ -37,7 +37,18 @@ class TcpServerConnection(Thread):
             self.log.debug(f"Trying to receive and unpack {size}b of json data")
 
             json_buffer = self.connection.recv(size).decode('utf-8')
-            self.log.info(f"Received: {self.parse_command(json_buffer)}")
+            command = self.parse_command(json_buffer)
+
+            if type(command) is Unregister:
+                user = Registrar.retrieve_user(command.nickname)
+                Registrar.deregister_user(User(user))
+                self.log.info(f"Deregistered user {user}")
+            elif type(command) is Register:
+                user = User(command.nickname, command.ip, command.port)
+                Registrar.register_user(user)
+                self.log.info(f"Registered user {user}")
+            else:
+                self.log.warn(f"Can not execute command {command}")
 
         self.log.info("Connection closed, client disconnected")
         Registrar.deregister_thread()
