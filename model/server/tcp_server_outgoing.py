@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from socket import socket
-
 import pykka
-from util.common import create_logger
+from util.common import create_logger, json_size_struct
 
 from model.user_list import User, UserList, AddedRemovedUsers
 
@@ -33,20 +32,22 @@ class TcpOutgoingActor(pykka.ThreadingActor):
             user_list = UserList(
                 [AddedRemovedUsers([], [message.user.nickname])]
             ).to_json().encode("utf-8")
+            user_list_size = json_size_struct.pack(len(user_list))
 
             for connection in self.connections:
                 self.log.info("Sending data")
-                connection.sendall(user_list)
+                connection.sendall(user_list_size + user_list)
 
         elif message_type == AddedUser:
             self.log.info("Sharing new user")
             user_list = UserList(
                 [AddedRemovedUsers([message.user], [])]
             ).to_json().encode("utf-8")
+            user_list_size = json_size_struct.pack(len(user_list))
 
             for connection in self.connections:
                 self.log.info("Sending data")
-                connection.sendall(user_list)
+                connection.sendall(user_list_size + user_list)
 
             self.log.info("Adding new connection")
             self.connections.append(message.connection)
