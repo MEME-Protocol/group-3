@@ -25,6 +25,7 @@ class TcpServerConnection(Thread):
             try:
                 buffer = self.connection.recv(4)
                 if len(buffer) == 0:
+                    self.log.info("Connection closed, client disconnected")
                     break
                 size = json_size_struct.unpack(buffer)[0]
             except struct.error:
@@ -41,8 +42,10 @@ class TcpServerConnection(Thread):
 
             if type(command) is Unregister:
                 user = Registrar.retrieve_user(command.nickname)
-                Registrar.deregister_user(User(user))
+                Registrar.deregister_user(user)
                 self.log.info(f"Deregistered user {user}")
+                self.log.info("Closing connection to client")
+                break
             elif type(command) is Register:
                 user = User(command.nickname, command.ip, command.port)
                 Registrar.register_user(user)
@@ -50,7 +53,7 @@ class TcpServerConnection(Thread):
             else:
                 self.log.warn(f"Can not execute command {command}")
 
-        self.log.info("Connection closed, client disconnected")
+        self.connection.close()
         Registrar.deregister_thread()
 
     def parse_command(self, command: str):
