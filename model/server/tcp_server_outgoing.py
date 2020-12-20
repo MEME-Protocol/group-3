@@ -31,7 +31,7 @@ class TcpOutgoingActor(pykka.ThreadingActor):
 
             self.log.info("Sharing closed connection")
             user_list = UserList(
-                [AddedRemovedUsers([], [message.user])]
+                [AddedRemovedUsers([], [message.user.nickname])]
             ).to_json().encode("utf-8")
 
             for connection in self.connections:
