@@ -11,15 +11,14 @@ from util.registrar import Registrar
 
 
 class TcpServerConnection(Thread):
-    log = create_logger("tcp_connection_logger")
+
 
     def __init__(self, connection):
         super().__init__()
         self.daemon = True
         self.connection = connection
         self.connection.settimeout(2)
-
-        Registrar.register_thread()
+        self.log = create_logger(f"tcp-connection-logger-{ Registrar.register_thread() }")
 
     def run(self):
         while not Registrar.shutdown_requested():

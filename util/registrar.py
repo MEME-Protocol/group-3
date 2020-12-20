@@ -6,6 +6,7 @@ class Registrar:
     until all threads are de-registered (and therefor done) using
     wait_for_shutdown()"""
     registered_threads = 0
+    overall_counter = 0
     registered_thread_lock = Lock()
 
     shutdown_requested_flag = False
@@ -18,7 +19,10 @@ class Registrar:
     def register_thread(cls):
         cls.registered_thread_lock.acquire()
         cls.registered_threads += 1
+        cls.overall_counter += 1
+        thread = cls.overall_counter
         cls.registered_thread_lock.release()
+        return thread
 
     @classmethod
     def deregister_thread(cls):
