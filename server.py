@@ -4,7 +4,7 @@ import sys
 from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket, timeout
 from threading import Thread
 
-from model.tcp_server_connection import TcpServerConnection
+from model.server.tcp_server_connection import TcpServerConnection
 from util.common import create_logger
 from util.registrar import Registrar
 

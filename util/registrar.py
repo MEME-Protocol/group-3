@@ -1,7 +1,7 @@
 from threading import Event, Lock
 
 from util.common import create_logger
-from model.tcp_server_outgoing import TcpOutgoingActor, AddedUser, RemovedUser
+from model.server.tcp_server_outgoing import TcpOutgoingActor, AddedUser, RemovedUser
 
 
 class Registrar:
