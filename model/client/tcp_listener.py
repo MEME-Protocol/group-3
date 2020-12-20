@@ -14,7 +14,7 @@ class TcpListener(Thread):
         super().__init__()
         self.connection = connection
         self.daemon = True
-        self.log = create_logger("TcpListener")
+        self.log = create_logger("TcpListener", client=True)
         self.client_actor = client_actor
 
     def run(self):

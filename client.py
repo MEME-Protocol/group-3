@@ -30,8 +30,6 @@ TcpListener(client_socket, actor).start()
 json_register = Register(user_name, "127.0.0.1", user_port).to_json().encode("utf-8")
 client_socket.sendall(json_size_struct.pack(len(json_register)) + json_register)
 
-print(f"Username: {user_name}")
-
 def shutdown_hook(sig, frame):
     json_unregister = Unregister(user_name).to_json().encode("utf-8")
     client_socket.sendall(json_size_struct.pack(len(json_unregister)) + json_unregister)

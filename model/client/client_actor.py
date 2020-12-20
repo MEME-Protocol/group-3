@@ -19,7 +19,7 @@ Should handle everything from the udp and tcp ports."""
 class ClientActor(Thread):
     def __init__(self):
         super().__init__()
-        self.log = create_logger("ClientActor")
+        self.log = create_logger("ClientActor", client=True)
         self.messages = []
         self.messages_lock = Lock()
         self.daemon = True
