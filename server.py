@@ -1,7 +1,7 @@
 #! /usr/bin/python3.9
 import signal
 import sys
-from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket
+from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket, timeout
 from threading import Thread
 
 from model.tcp_server_connection import TcpServerConnection
@@ -25,13 +25,18 @@ def wait_for_tcp_connection():
         tcp_server.listen()
         log.info(f"Started tcp server at {tcp_host}:{tcp_port}")
         while not Registrar.shutdown_requested():
-            connection, _ = tcp_server.accept()
+            try:
+                connection, _ = tcp_server.accept()
+            except timeout:
+                log.debug("Timeout received")
+                continue
+
             log.info("Server accepted connection")
             TcpServerConnection(connection).start()
     log.info("Stopped listening to tcp-connections")
 
 
-setdefaulttimeout(20)
+setdefaulttimeout(25)
 
 Thread(target=lambda: wait_for_tcp_connection(), daemon=True).start()
 
