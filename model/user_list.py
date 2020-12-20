@@ -22,5 +22,5 @@ class AddedRemovedUsers:
 @dataclass_json
 @dataclass
 class UserList:
-    users: List[AddedRemovedUsers]
+    users: AddedRemovedUsers
     type: str = "user-list"
