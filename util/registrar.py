@@ -38,10 +38,10 @@ class Registrar:
     def deregister_user(cls, user):
         cls.registered_users_lock.acquire()
         if user in cls.registered_users:
-            cls.log(f"Successfully unregistered user {user}")
+            cls.log.info(f"Successfully unregistered user {user}")
             cls.registered_users.remove(user)
         else:
-            cls.log(f"Could not unregistered user {user} - not registered")
+            cls.log.info(f"Could not unregistered user {user} - not registered")
         cls.registered_users_lock.release()
 
     @classmethod
