@@ -2,8 +2,9 @@ from dataclasses import dataclass
 from threading import Lock, Thread
 
 from model.user_list import UserList, User
+from model.broadcast import Broadcast
+from util.common import json_size_struct
 from util.common import create_logger
-
 
 @dataclass
 class IncomingMessage:
@@ -21,7 +22,7 @@ class UserLoggedOut:
 """Handles incoming message in the order that they are received.
 Should handle everything from the udp and tcp ports."""
 class InputActor(Thread):
-    def __init__(self, local_user: User):
+    def __init__(self, local_user: User, outgoing_tcp_connection):
         super().__init__()
         self.log = create_logger("InputActor", client=True)
         self.messages = []
@@ -30,6 +31,7 @@ class InputActor(Thread):
         self.users_lock = Lock()
         self.daemon = True
         self.local_user = local_user
+        self.outgoing_tcp_connection = outgoing_tcp_connection
 
     def run(self):
         while True:
@@ -42,6 +44,18 @@ class InputActor(Thread):
             elif command == "users":
                 for user in self.get_users():
                     print(user.nickname)
+            elif command == "broadcast":
+                self.handle_broadcast_request()
+            else:
+                print("I don't know this command")
+
+    def handle_broadcast_request(self):
+        message = input("Type in your message:")
+        broadcast = Broadcast(message).to_json().encode("utf-8")
+        broadcast_length = json_size_struct.pack(len(broadcast))
+
+        self.log.info(f"Broadcasting {broadcast_length + broadcast}")
+        self.outgoing_tcp_connection.sendall(broadcast_length + broadcast)
 
     def tell(self, message):
         self.log.debug(f"Recieved message {message}")

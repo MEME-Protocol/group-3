@@ -1,15 +1,11 @@
 from dataclasses import dataclass
 from threading import Lock, Thread
 
-from model.client.input_actor import InputActor, NewUser, UserLoggedOut
+from model.client.input_actor import InputActor, NewUser, UserLoggedOut, IncomingMessage
+from model.broadcast import Broadcast
 from model.user_list import UserList
 from util.common import create_logger
 
-
-@dataclass
-class IncomingMessage:
-    user_name: str
-    message: str
 
 @dataclass
 class UserUpdate:
@@ -53,6 +49,7 @@ class ClientActor(Thread):
         message_type = type(message)
         if message_type == IncomingMessage:
             self.log.info(f"Incoming message from {message.user_name}: {message.message}")
+            self.input_actor.tell(message)
         elif message_type == UserUpdate:
             self.log.info(f"User update ({message.user_list})")
             added_users = message.user_list.users.added
@@ -61,5 +58,8 @@ class ClientActor(Thread):
                 self.input_actor.tell(NewUser(user))
             for user in removed_users:
                 self.input_actor.tell(UserLoggedOut(user))
+        elif message_type is Broadcast:
+            self.log.info("Received broadcast message")
+            self.input_actor.tell(message)
         else:
             self.log.warn(f"Cannot handle messages of type ({message_type})")

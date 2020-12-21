@@ -13,7 +13,6 @@ def shutdown_hook(sig, frame):
     print("Shutdown requested")
     Registrar.request_shutdown()
     Registrar.wait_for_shutdown()
-    Registrar.outgoing_actor.stop()
     sys.exit(0)
 
 

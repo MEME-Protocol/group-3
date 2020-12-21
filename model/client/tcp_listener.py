@@ -3,7 +3,9 @@ import struct
 from threading import Thread
 
 from model.client.client_actor import UserUpdate
+from model.client.input_actor import IncomingMessage
 from model.user_list import UserList
+from model.broadcast import Broadcast
 from util.common import create_logger, json_size_struct
 
 
@@ -33,10 +35,12 @@ class TcpListener(Thread):
                 continue
 
             message = self.connection.recv(json_size).decode("utf-8")
-            user_list = self.parse_message(message)
+            message = self.parse_message(message)
 
-            if user_list:
-                self.client_actor.tell(UserUpdate(user_list))
+            if type(message) is UserList:
+                self.client_actor.tell(UserUpdate(message))
+            elif type(message) is Broadcast:
+                self.client_actor.tell(IncomingMessage("broadcast", message.message))
             else:
                 self.log.error("Could not parse message")
 
@@ -46,4 +50,8 @@ class TcpListener(Thread):
             parsed_command = UserList.from_json(message)
         except (KeyError, ValueError):
             self.log.debug("Command could not be parsed as Unregister command")
+        try:
+            parsed_command = Broadcast.from_json(message)
+        except (KeyError, ValueError):
+            self.log.debug("Command could not be parsed as Broadcast command")
         return parsed_command

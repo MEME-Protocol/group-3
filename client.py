@@ -32,7 +32,7 @@ client_socket = socket(AF_INET, SOCK_STREAM)
 client_socket.connect((server_host, server_port))
 
 
-input_actor = InputActor(User(user_name, user_ip, user_port))
+input_actor = InputActor(User(user_name, user_ip, user_port), client_socket)
 input_actor.start()
 actor = ClientActor(input_actor)
 actor.start()

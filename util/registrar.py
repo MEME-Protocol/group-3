@@ -26,6 +26,10 @@ class Registrar:
     Event.clear(shutdown_event)
 
     @classmethod
+    def broadcast_message(cls, broadcast):
+        cls.outgoing_actor.tell(broadcast)
+
+    @classmethod
     def register_user(cls, user, connection):
         ret = None
         cls.registered_users_lock.acquire()
@@ -87,7 +91,6 @@ class Registrar:
     def wait_for_shutdown(cls):
         if cls.threads_registered() > 0:
             Event.wait(cls.shutdown_event, 30)
-        cls.outgoing_actor.stop()
 
     @classmethod
     def request_shutdown(cls):

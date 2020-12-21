@@ -4,6 +4,7 @@ from typing import List
 
 from threading import Thread, Lock
 from model.user_list import AddedRemovedUsers, User, UserList
+from model.broadcast import Broadcast
 from util.common import create_logger, json_size_struct
 
 
@@ -79,5 +80,10 @@ class TcpOutgoingActor(Thread):
             self.log.info("Adding new connection")
             self.connections.append(message.connection)
 
+        elif message_type == Broadcast:
+            broadcast = message.to_json().encode("utf-8")
+            broadcast_length = json_size_struct.pack(len(broadcast))
+            for connection in self.connections:
+                connection.sendall(broadcast_length + broadcast)
         else:
             self.log.error(f"Cannot handle messages of type {type(message)}")

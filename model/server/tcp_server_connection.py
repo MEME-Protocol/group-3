@@ -9,6 +9,7 @@ from util.registrar import Registrar
 from model.register import Register
 from model.unregister import Unregister
 from model.user_list import User
+from model.broadcast import Broadcast
 
 
 class TcpServerConnection(Thread):
@@ -49,6 +50,9 @@ class TcpServerConnection(Thread):
                 user = User(command.nickname, command.ip, command.port)
                 Registrar.register_user(user, self.connection)
                 self.log.info(f"Registered user {user}")
+            elif type(command) is Broadcast:
+                Registrar.broadcast_message(command)
+                self.log.warn(f"Broadcasting message: ({command})")
             else:
                 self.log.warn(f"Can not execute command {command}")
 
@@ -65,4 +69,8 @@ class TcpServerConnection(Thread):
             parsed_command = Register.from_json(command)
         except (KeyError, ValueError):
             self.log.debug("Command could not be parsed as Register command")
+        try:
+            parsed_command = Broadcast.from_json(command)
+        except (KeyError, ValueError):
+            self.log.debug("Command could not be parsed as Broadcast command")
         return parsed_command
