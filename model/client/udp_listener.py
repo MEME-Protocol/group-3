@@ -36,7 +36,7 @@ class UdpListener(Thread):
                 self.log.debug("Timeout listening for packages")
                 continue
             except struct.error:
-                self.log.warn(f"Parsing error, cannot parse {json_size_buffer} to u32")
+                self.log.warn(f"Parsing error, cannot parse {buffer} to u32")
                 continue
 
             message = buffer[4:(json_size + 4)]
