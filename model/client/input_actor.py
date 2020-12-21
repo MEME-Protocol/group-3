@@ -70,6 +70,7 @@ class InputActor(Thread):
                 user = [user for user in self.users if user.ip == ip and user.port == port]
                 user = "unknown" if len(user) == 0 else user[0].nickname
                 print(f"{message.ip_port} - [{user}]: {message.message}")
+                self.users_lock.release()
             else:
                 print(f"{message.user_name}: {message.message}")
 
