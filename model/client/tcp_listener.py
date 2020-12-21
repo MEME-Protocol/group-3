@@ -3,7 +3,7 @@ import struct
 from threading import Thread
 
 from model.client.client_actor import UserUpdate
-from model.client.input_actor import IncomingMessage
+from model.client.input_actor import IncomingBroadcast
 from model.user_list import UserList
 from model.broadcast import Broadcast
 from util.common import create_logger, json_size_struct
@@ -40,7 +40,7 @@ class TcpListener(Thread):
             if type(message) is UserList:
                 self.client_actor.tell(UserUpdate(message))
             elif type(message) is Broadcast:
-                self.client_actor.tell(IncomingMessage("broadcast", message.message))
+                self.client_actor.tell(IncomingBroadcast(message.message))
             else:
                 self.log.error("Could not parse message")
 

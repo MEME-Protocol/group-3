@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from threading import Lock, Thread
 
-from model.client.input_actor import InputActor, NewUser, UserLoggedOut, IncomingMessage
+from model.client.input_actor import InputActor, NewUser, UserLoggedOut, IncomingBroadcast
 from model.broadcast import Broadcast
 from model.user_list import UserList
 from util.common import create_logger
@@ -47,8 +47,8 @@ class ClientActor(Thread):
     def handle_next_message(self):
         message = self.get_next_message()
         message_type = type(message)
-        if message_type == IncomingMessage:
-            self.log.info(f"Incoming message from {message.user_name}: {message.message}")
+        if message_type == IncomingBroadcast:
+            self.log.info(f"Incoming broadcast: ({message.message})")
             self.input_actor.tell(message)
         elif message_type == UserUpdate:
             self.log.info(f"User update ({message.user_list})")
