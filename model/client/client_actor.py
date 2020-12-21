@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from threading import Lock, Thread
 
-from model.client.input_actor import InputActor, NewUser, UserLoggedOut, IncomingBroadcast
+from model.client.input_actor import InputActor, NewUser, UserLoggedOut, IncomingBroadcast, IncomingUdpMessage
 from model.broadcast import Broadcast
 from model.user_list import UserList
 from util.common import create_logger
@@ -10,6 +10,7 @@ from util.common import create_logger
 @dataclass
 class UserUpdate:
     user_list: UserList
+
 
 """Handles incoming message in the order that they are received.
 Should handle everything from the udp and tcp ports."""
@@ -50,7 +51,7 @@ class ClientActor(Thread):
         if message_type == IncomingBroadcast:
             self.log.info(f"Incoming broadcast: ({message.message})")
             self.input_actor.tell(message)
-        elif message_type == UserUpdate:
+        if message_type == UserUpdate:
             self.log.info(f"User update ({message.user_list})")
             added_users = message.user_list.users.added
             removed_users = message.user_list.users.removed
@@ -60,6 +61,9 @@ class ClientActor(Thread):
                 self.input_actor.tell(UserLoggedOut(user))
         elif message_type is Broadcast:
             self.log.info("Received broadcast message")
+            self.input_actor.tell(message)
+        elif message_type is IncomingUdpMessage:
+            self.log.info(f"Received incoming udp message: ({message})")
             self.input_actor.tell(message)
         else:
             self.log.warn(f"Cannot handle messages of type ({message_type})")

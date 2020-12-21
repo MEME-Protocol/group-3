@@ -5,6 +5,7 @@ from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket, 
 from struct import Struct
 from threading import Thread
 
+from model.client.udp_listener import UdpListener
 from model.client.input_actor import InputActor
 from model.client.client_actor import ClientActor
 from model.client.tcp_listener import TcpListener
@@ -28,23 +29,29 @@ server_host = input("What is the servers ip (leave empty for 127.0.0.1): ").stri
 if len(server_host) == 0:
     server_host = "127.0.0.1"
 
-client_socket = socket(AF_INET, SOCK_STREAM)
-client_socket.connect((server_host, server_port))
+client_tcp_socket = socket(AF_INET, SOCK_STREAM)
+client_tcp_socket.connect((server_host, server_port))
 
+client_udp_socket = socket(AF_INET, SOCK_DGRAM)
+client_udp_socket.bind((server_host, user_port))
+client_udp_socket.settimeout(10)
 
-input_actor = InputActor(User(user_name, user_ip, user_port), client_socket)
+input_actor = InputActor(User(user_name, user_ip, user_port), client_tcp_socket, client_udp_socket)
 input_actor.start()
 actor = ClientActor(input_actor)
 actor.start()
-TcpListener(client_socket, actor).start()
+
+TcpListener(client_tcp_socket, actor).start()
+UdpListener(client_udp_socket, actor).start()
 
 json_register = Register(user_name, user_ip, user_port).to_json().encode("utf-8")
-client_socket.sendall(json_size_struct.pack(len(json_register)) + json_register)
+client_tcp_socket.sendall(json_size_struct.pack(len(json_register)) + json_register)
 
 def shutdown_hook(sig, frame):
     json_unregister = Unregister(user_name).to_json().encode("utf-8")
-    client_socket.sendall(json_size_struct.pack(len(json_unregister)) + json_unregister)
-    client_socket.close()
+    client_tcp_socket.sendall(json_size_struct.pack(len(json_unregister)) + json_unregister)
+    client_tcp_socket.close()
+    client_udp_socket.close()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, shutdown_hook)

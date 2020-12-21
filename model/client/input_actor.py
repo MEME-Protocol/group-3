@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from threading import Lock, Thread
 
+from model.message import UdpMessage
 from model.user_list import UserList, User
 from model.broadcast import Broadcast
 from util.common import json_size_struct
@@ -18,10 +19,15 @@ class NewUser:
 class UserLoggedOut:
     user: User
 
+@dataclass
+class IncomingUdpMessage:
+    ip: str
+    message: str
+
 """Handles incoming message in the order that they are received.
 Should handle everything from the udp and tcp ports."""
 class InputActor(Thread):
-    def __init__(self, local_user: User, outgoing_tcp_connection):
+    def __init__(self, local_user: User, outgoing_tcp_connection, outgoing_udp_connection):
         super().__init__()
         self.log = create_logger("InputActor", client=True)
         self.messages = []
@@ -31,7 +37,7 @@ class InputActor(Thread):
         self.daemon = True
         self.local_user = local_user
         self.outgoing_tcp_connection = outgoing_tcp_connection
-        # todo: Add outgoing udp connection
+        self.outgoing_udp_connection = outgoing_udp_connection
 
     def run(self):
         while True:
@@ -54,6 +60,8 @@ class InputActor(Thread):
         for message in self.get_messages():
             if type(message) is IncomingBroadcast:
                 print(f"Broadcast: {message.message}")
+            elif type(message) is IncomingUdpMessage:
+                print(f"{message.ip}: {message.message}")
             else:
                 print(f"{message.user_name}: {message.message}")
 
@@ -66,8 +74,14 @@ class InputActor(Thread):
             return
         else:
             user = user[0]
-        # todo:
+
+        message = input("Type in your message: ")
+
         print(f"Sending message to {user.ip}:{user.port}")
+
+        message = UdpMessage(message).to_json().encode("utf-8")
+        message_length = json_size_struct.pack(len(message))
+        self.outgoing_udp_connection.sendto(message_length + message, (user.ip, user.port))
 
     def handle_broadcast_request(self):
         message = input("Type in your message: ")
@@ -80,7 +94,7 @@ class InputActor(Thread):
     def tell(self, message):
         self.log.debug(f"Recieved message {message}")
         message_type = type(message)
-        if message_type == IncomingBroadcast:
+        if message_type == IncomingBroadcast or message_type == IncomingUdpMessage:
             self.messages_lock.acquire()
             self.messages.append(message)
             self.messages_lock.release()
