@@ -21,7 +21,7 @@ class UserLoggedOut:
 
 @dataclass
 class IncomingUdpMessage:
-    ip: str
+    ip_port: str
     message: str
 
 """Handles incoming message in the order that they are received.
@@ -61,7 +61,12 @@ class InputActor(Thread):
             if type(message) is IncomingBroadcast:
                 print(f"Broadcast: {message.message}")
             elif type(message) is IncomingUdpMessage:
-                print(f"{message.ip}: {message.message}")
+                self.users_lock.acquire()
+                ip = message.ip_port[0]
+                port = message.ip_port[1]
+                user = [user for user in self.users if user.ip == ip and user.port == port]
+                user = "unknown" if len(user) == 0 else user[0].nickname
+                print(f"{message.ip_port} - [{user}]: {message.message}")
             else:
                 print(f"{message.user_name}: {message.message}")
 
