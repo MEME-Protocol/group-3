@@ -21,7 +21,7 @@ class UserLoggedOut:
 """Handles incoming message in the order that they are received.
 Should handle everything from the udp and tcp ports."""
 class InputActor(Thread):
-    def __init__(self):
+    def __init__(self, local_user: User):
         super().__init__()
         self.log = create_logger("InputActor", client=True)
         self.messages = []
@@ -29,6 +29,7 @@ class InputActor(Thread):
         self.users = []
         self.users_lock = Lock()
         self.daemon = True
+        self.local_user = local_user
 
     def run(self):
         while True:
@@ -51,7 +52,8 @@ class InputActor(Thread):
             self.messages_lock.release()
         elif message_type == NewUser:
             self.users_lock.acquire()
-            self.users.append(message.user)
+            if message.user != self.local_user:
+                self.users.append(message.user)
             self.users_lock.release()
         elif message_type == UserLoggedOut:
             self.users_lock.acquire()

@@ -1,7 +1,7 @@
 #! /usr/bin/python3.9
 import signal
 import sys
-from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket
+from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket, gethostname
 from struct import Struct
 from threading import Thread
 
@@ -32,7 +32,7 @@ client_socket = socket(AF_INET, SOCK_STREAM)
 client_socket.connect((server_host, server_port))
 
 
-input_actor = InputActor()
+input_actor = InputActor(User(user_name, user_ip, user_port))
 input_actor.start()
 actor = ClientActor(input_actor)
 actor.start()
