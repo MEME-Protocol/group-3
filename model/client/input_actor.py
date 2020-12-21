@@ -45,7 +45,10 @@ class InputActor(Thread):
             if command == "messages":
                 self.list_messages()
             elif command == "help":
-                print("Helpful help message")
+                print("Enter 'users' for a list of all users")
+                print("Enter 'messages' to view your messages")
+                print("Enter 'broadcast' to open the broadcast prompt")
+                print("Enter 'message' to open the direct message prompt")
             elif command == "users":
                 for user in self.get_users():
                     print(f"{user.nickname}: at {user.ip}:{user.port}")
