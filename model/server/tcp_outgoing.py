@@ -19,7 +19,7 @@ class RemovedUser:
     user: User
     connection: socket
 
-class TcpOutgoingActor(Thread):
+class TcpOutgoing(Thread):
     def __init__(self):
         super().__init__()
         self.log = create_logger("TcpOutgoingActor")

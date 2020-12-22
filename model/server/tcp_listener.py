@@ -12,7 +12,7 @@ from model.user_list import User
 from model.broadcast import Broadcast
 
 
-class TcpServerConnection(Thread):
+class TcpListener(Thread):
     def __init__(self, connection):
         super().__init__()
         self.daemon = True

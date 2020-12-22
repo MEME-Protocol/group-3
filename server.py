@@ -4,7 +4,7 @@ import sys
 from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket, timeout
 from threading import Thread
 
-from model.server.tcp_server_connection import TcpServerConnection
+from model.server.tcp_listener import TcpListener
 from util.common import create_logger
 from util.registrar import Registrar
 
@@ -32,7 +32,7 @@ def wait_for_tcp_connection():
                 continue
 
             log.info("Server accepted connection")
-            TcpServerConnection(connection).start()
+            TcpListener(connection).start()
     log.info("Stopped listening to tcp-connections")
 
 

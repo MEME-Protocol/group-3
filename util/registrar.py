@@ -1,7 +1,7 @@
 from threading import Event, Lock
 
 from util.common import create_logger
-from model.server.tcp_server_outgoing import TcpOutgoingActor, AddedUser, RemovedUser
+from model.server.tcp_outgoing import TcpOutgoing, AddedUser, RemovedUser
 
 
 class Registrar:
@@ -9,7 +9,7 @@ class Registrar:
     until all threads are de-registered (and therefor done) using
     wait_for_shutdown()"""
     log = create_logger("Registrar")
-    outgoing_actor = TcpOutgoingActor()
+    outgoing_actor = TcpOutgoing()
     outgoing_actor.start()
 
     registered_threads = 0
@@ -101,8 +101,6 @@ class Registrar:
     @classmethod
     def shutdown_requested(cls):
         cls.shutdown_requested_lock.acquire()
-        # ! 'fun'-fact, apparently this does not return a reference and is
-        # ! therefor 'safe'¯\_(ツ)_/¯
         shutdown_requested = cls.shutdown_requested_flag
         cls.shutdown_requested_lock.release()
         return shutdown_requested
