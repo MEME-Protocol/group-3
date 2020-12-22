@@ -3,13 +3,19 @@ import struct
 from threading import Thread
 
 from model.broadcast import Broadcast
-from model.client.input_actor import (IncomingBroadcast, InputActor, NewUser,
-                                      UserLoggedOut)
+from model.client.input_actor import (
+    IncomingBroadcast,
+    InputActor,
+    NewUser,
+    UserLoggedOut,
+)
 from model.user_list import UserList
 from util.common import create_logger, json_size_struct
 
 """Handles listening on the tcp port. Messages on this ports are server-side
 messages when a user registers or de-registers"""
+
+
 class TcpListener(Thread):
     def __init__(self, connection, intput_actor: InputActor):
         super().__init__()
@@ -41,7 +47,6 @@ class TcpListener(Thread):
                 self.log.debug("Timeout listening for packages")
             except struct.error:
                 self.log.warn(f"Parsing error, cannot parse {json_size_buffer} to u32")
-
 
     def share_message(self, parsed_message):
         if type(parsed_message) is UserList:

@@ -8,6 +8,7 @@ class Registrar:
     """Static class that provides the option to register threads and wait
     until all threads are de-registered (and therefor done) using
     wait_for_shutdown()"""
+
     log = create_logger("Registrar")
     outgoing_actor = TcpOutgoing()
     outgoing_actor.start()

@@ -11,23 +11,31 @@ from util.common import create_logger, json_size_struct
 class IncomingBroadcast:
     message: str
 
+
 @dataclass
 class NewUser:
     user: User
 
+
 @dataclass
 class UserLoggedOut:
     user: User
+
 
 @dataclass
 class IncomingUdpMessage:
     ip_port: str
     message: str
 
+
 """Handles incoming message in the order that they are received.
 Should handle everything from the udp and tcp ports."""
+
+
 class InputActor(Thread):
-    def __init__(self, local_user: User, outgoing_tcp_connection, outgoing_udp_connection):
+    def __init__(
+        self, local_user: User, outgoing_tcp_connection, outgoing_udp_connection
+    ):
         super().__init__()
         self.daemon = True
         self.log = create_logger("InputActor", client=True)
@@ -70,13 +78,14 @@ class InputActor(Thread):
                 self.users_lock.acquire()
                 ip = message.ip_port[0]
                 port = message.ip_port[1]
-                user = [user for user in self.users if user.ip == ip and user.port == port]
+                user = [
+                    user for user in self.users if user.ip == ip and user.port == port
+                ]
                 user = "unknown" if len(user) == 0 else user[0].nickname
                 print(f"{message.ip_port} - [{user}]: {message.message}")
                 self.users_lock.release()
             else:
                 print(f"{message.user_name}: {message.message}")
-
 
     def handle_direct_message(self):
         receiver = input("Who do you want to message: ")
@@ -93,7 +102,9 @@ class InputActor(Thread):
 
         message = UdpMessage(message).to_json().encode("utf-8")
         message_length = json_size_struct.pack(len(message))
-        self.outgoing_udp_connection.sendto(message_length + message, (user.ip, user.port))
+        self.outgoing_udp_connection.sendto(
+            message_length + message, (user.ip, user.port)
+        )
 
     def handle_broadcast_request(self):
         message = input("Type in your message: ")

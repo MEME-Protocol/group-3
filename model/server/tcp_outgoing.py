@@ -14,10 +14,12 @@ class AddedUser:
     connection: socket
     registered_users: List[User]
 
+
 @dataclass
 class RemovedUser:
     user: User
     connection: socket
+
 
 class TcpOutgoing(Thread):
     def __init__(self):
@@ -54,9 +56,11 @@ class TcpOutgoing(Thread):
             self.connections.remove(message.connection)
 
             self.log.info("Sharing closed connection")
-            user_list = UserList(
-                AddedRemovedUsers([], [message.user])
-            ).to_json().encode("utf-8")
+            user_list = (
+                UserList(AddedRemovedUsers([], [message.user]))
+                .to_json()
+                .encode("utf-8")
+            )
             user_list_size = json_size_struct.pack(len(user_list))
 
             for connection in self.connections:
@@ -65,17 +69,25 @@ class TcpOutgoing(Thread):
 
         elif message_type == AddedUser:
             self.log.info("Sharing new user")
-            user_list = UserList(
-                AddedRemovedUsers([message.user], [])
-            ).to_json().encode("utf-8")
+            user_list = (
+                UserList(AddedRemovedUsers([message.user], []))
+                .to_json()
+                .encode("utf-8")
+            )
             user_list_size = json_size_struct.pack(len(user_list))
 
             for connection in self.connections:
                 self.log.info("Sending data")
                 connection.sendall(user_list_size + user_list)
 
-            new_user_message = UserList(AddedRemovedUsers(message.registered_users, [])).to_json().encode("utf-8")
-            message.connection.sendall(json_size_struct.pack(len(new_user_message)) + new_user_message)
+            new_user_message = (
+                UserList(AddedRemovedUsers(message.registered_users, []))
+                .to_json()
+                .encode("utf-8")
+            )
+            message.connection.sendall(
+                json_size_struct.pack(len(new_user_message)) + new_user_message
+            )
 
             self.log.info("Adding new connection")
             self.connections.append(message.connection)

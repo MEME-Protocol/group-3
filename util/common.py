@@ -10,6 +10,7 @@ def create_logger(logger_name, client=False):
     log.setLevel(DEBUG)
     log_handler = FileHandler("client.log") if client else StreamHandler()
     log_handler.setFormatter(
-        Formatter("%(asctime)s [%(filename)s] [%(threadName)s] %(message)s"))
+        Formatter("%(asctime)s [%(filename)s] [%(threadName)s] %(message)s")
+    )
     log.addHandler(log_handler)
     return log

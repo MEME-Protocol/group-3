@@ -9,5 +9,6 @@ class Unregister:
     nickname: str
     type: str = "unregister"
 
+
 # Unregister.from_json(json_string)
 # Unregister.to_json() -> json_string

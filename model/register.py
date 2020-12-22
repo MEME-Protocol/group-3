@@ -11,5 +11,6 @@ class Register:
     port: int
     type: str = "register"
 
+
 # Register.from_json(json_string)
 # Register.to_json() -> json_string

@@ -18,7 +18,9 @@ class TcpListener(Thread):
         self.daemon = True
         self.connection = connection
         self.connection.settimeout(2)
-        self.log = create_logger(f"tcp-connection-logger-{ Registrar.register_thread() }")
+        self.log = create_logger(
+            f"tcp-connection-logger-{ Registrar.register_thread() }"
+        )
 
     def run(self):
         while not Registrar.shutdown_requested():
@@ -27,7 +29,7 @@ class TcpListener(Thread):
 
             self.log.debug(f"Trying to receive and unpack {size}b of json data")
 
-            json_buffer = self.connection.recv(size).decode('utf-8')
+            json_buffer = self.connection.recv(size).decode("utf-8")
             command = self.parse_command(json_buffer)
 
             if self.handle_command(command) is Unregister:

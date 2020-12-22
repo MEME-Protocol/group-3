@@ -11,6 +11,8 @@ from model.message import UdpMessage
 
 """Handles listening on the tcp port. Messages on this ports are server-side
 messages when a user registers or de-registers"""
+
+
 class UdpListener(Thread):
     def __init__(self, connection, input_actor: InputActor):
         super().__init__()
@@ -36,14 +38,14 @@ class UdpListener(Thread):
                 self.log.warn(f"Parsing error, cannot parse {buffer} to u32")
                 continue
 
-            message = buffer[4:(json_size + 4)]
+            message = buffer[4 : (json_size + 4)]
             self.log.info(f"Received message: {message}")
             message = self.parse_message(message)
 
             if message:
                 self.log.info(f"Received direct message: ({message})")
                 self.input_actor.tell(IncomingUdpMessage(sender, message.message))
-            elif len(buffer[:(json_size + 4)]) > 0:
+            elif len(buffer[: (json_size + 4)]) > 0:
                 self.log.error("Udp buffer contained more data than excpected")
             else:
                 self.log.warn("Could not parse direct message")
