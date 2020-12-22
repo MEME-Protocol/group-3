@@ -22,42 +22,52 @@ class TcpListener(Thread):
 
     def run(self):
         while not Registrar.shutdown_requested():
-            try:
-                buffer = self.connection.recv(4)
-                if len(buffer) == 0:
-                    self.log.info("Connection closed, client disconnected")
-                    break
-                size = json_size_struct.unpack(buffer)[0]
-            except struct.error:
-                self.log.error("Could not unpack json size")
-                continue
-            except socket.error:
-                self.log.debug("Socket error/timeout")
-                continue
+            if not (size := self.receive_json_size()):
+                break
 
             self.log.debug(f"Trying to receive and unpack {size}b of json data")
 
             json_buffer = self.connection.recv(size).decode('utf-8')
             command = self.parse_command(json_buffer)
 
-            if type(command) is Unregister:
-                user = Registrar.retrieve_user(command.nickname)
-                Registrar.deregister_user(user, self.connection)
-                self.log.info(f"Deregistered user {user}")
-                self.log.info("Closing connection to client")
+            if self.handle_command(command) is Unregister:
                 break
-            elif type(command) is Register:
-                user = User(command.nickname, command.ip, command.port)
-                Registrar.register_user(user, self.connection)
-                self.log.info(f"Registered user {user}")
-            elif type(command) is Broadcast:
-                Registrar.broadcast_message(command)
-                self.log.warn(f"Broadcasting message: ({command})")
-            else:
-                self.log.warn(f"Can not execute command {command}")
 
+        self.log.info("Closing connection to client")
         self.connection.close()
         Registrar.deregister_thread()
+
+    def handle_command(self, command):
+        if type(command) is Unregister:
+            user = Registrar.retrieve_user(command.nickname)
+            Registrar.deregister_user(user, self.connection)
+            self.log.info(f"Deregistered user {user}")
+            return type(command)
+        elif type(command) is Register:
+            user = User(command.nickname, command.ip, command.port)
+            Registrar.register_user(user, self.connection)
+            self.log.info(f"Registered user {user}")
+        elif type(command) is Broadcast:
+            Registrar.broadcast_message(command)
+            self.log.warn(f"Broadcasting message: ({command})")
+        else:
+            self.log.warn(f"Can not execute command {command}")
+
+    def receive_json_size(self):
+        while not Registrar.shutdown_requested():
+            try:
+                buffer = self.connection.recv(4)
+                if len(buffer) == 0:
+                    self.log.info("Connection closed, client disconnected")
+                    break
+                return json_size_struct.unpack(buffer)[0]
+            except struct.error:
+                self.log.error("Could not unpack json size")
+                continue
+            except socket.error:
+                self.log.debug("Socket error/timeout")
+                continue
+        return None
 
     def parse_command(self, command: str):
         parsed_command = None

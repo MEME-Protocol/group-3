@@ -22,10 +22,10 @@ class RemovedUser:
 class TcpOutgoing(Thread):
     def __init__(self):
         super().__init__()
-        self.log = create_logger("TcpOutgoingActor")
-        self.connections = []
         self.daemon = True
+        self.log = create_logger("TcpOutgoingActor")
 
+        self.connections = []
         self.messages = []
         self.messages_lock = Lock()
 
