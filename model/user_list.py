@@ -16,7 +16,7 @@ class User:
             self.nickname.encode("utf-8")
             + self.ip.encode("utf-8")
             + (self.port).to_bytes(10, byteorder="big"),
-            byteorder='big'
+            byteorder="big",
         )
 
 
