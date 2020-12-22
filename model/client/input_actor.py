@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from threading import Lock, Thread
 
-from model.message import UdpMessage
-from model.user_list import UserList, User
 from model.broadcast import Broadcast
-from util.common import json_size_struct
-from util.common import create_logger
+from model.message import UdpMessage
+from model.user_list import User, UserList
+from util.common import create_logger, json_size_struct
+
 
 @dataclass
 class IncomingBroadcast:
@@ -29,12 +29,15 @@ Should handle everything from the udp and tcp ports."""
 class InputActor(Thread):
     def __init__(self, local_user: User, outgoing_tcp_connection, outgoing_udp_connection):
         super().__init__()
+        self.daemon = True
         self.log = create_logger("InputActor", client=True)
+
         self.messages = []
         self.messages_lock = Lock()
+
         self.users = []
         self.users_lock = Lock()
-        self.daemon = True
+
         self.local_user = local_user
         self.outgoing_tcp_connection = outgoing_tcp_connection
         self.outgoing_udp_connection = outgoing_udp_connection

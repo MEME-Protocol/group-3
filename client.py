@@ -1,14 +1,14 @@
 #! /usr/bin/python3.9
 import signal
 import sys
-from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket, gethostname
+from socket import (AF_INET, SOCK_DGRAM, SOCK_STREAM, gethostname,
+                    setdefaulttimeout, socket)
 from struct import Struct
 from threading import Thread
 
-from model.client.udp_listener import UdpListener
 from model.client.input_actor import InputActor
-from model.client.client_actor import ClientActor
 from model.client.tcp_listener import TcpListener
+from model.client.udp_listener import UdpListener
 from model.register import Register
 from model.unregister import Unregister
 from model.user_list import User
@@ -38,11 +38,9 @@ client_udp_socket.settimeout(10)
 
 input_actor = InputActor(User(user_name, user_ip, user_port), client_tcp_socket, client_udp_socket)
 input_actor.start()
-actor = ClientActor(input_actor)
-actor.start()
 
-TcpListener(client_tcp_socket, actor).start()
-UdpListener(client_udp_socket, actor).start()
+TcpListener(client_tcp_socket, input_actor).start()
+UdpListener(client_udp_socket, input_actor).start()
 
 json_register = Register(user_name, user_ip, user_port).to_json().encode("utf-8")
 client_tcp_socket.sendall(json_size_struct.pack(len(json_register)) + json_register)

@@ -2,8 +2,7 @@ import socket
 import struct
 from threading import Thread
 
-from model.client.client_actor import UserUpdate
-from model.client.input_actor import IncomingBroadcast, IncomingUdpMessage
+from model.client.input_actor import InputActor, IncomingBroadcast, IncomingUdpMessage
 from model.user_list import UserList
 from model.broadcast import Broadcast
 from util.common import create_logger, json_size_struct
@@ -13,20 +12,18 @@ from model.message import UdpMessage
 """Handles listening on the tcp port. Messages on this ports are server-side
 messages when a user registers or de-registers"""
 class UdpListener(Thread):
-    def __init__(self, connection, client_actor):
+    def __init__(self, connection, input_actor: InputActor):
         super().__init__()
         self.daemon = True
-        self.connection = connection
         self.log = create_logger("UdpListener", client=True)
-        self.client_actor = client_actor
+
+        self.connection = connection
+        self.input_actor = input_actor
 
     def run(self):
         while True:
             try:
                 buffer, sender = self.connection.recvfrom(4096)
-                if len(buffer) == 0:
-                    self.log.info("Server dropped connection, stopping Thread")
-                    break
                 json_size = json_size_struct.unpack(buffer[:4])[0]
                 self.log.info(f"Json size {json_size}")
             except socket.error:
@@ -45,7 +42,9 @@ class UdpListener(Thread):
 
             if message:
                 self.log.info(f"Received direct message: ({message})")
-                self.client_actor.tell(IncomingUdpMessage(sender, message.message))
+                self.input_actor.tell(IncomingUdpMessage(sender, message.message))
+            elif len(buffer[:(json_size + 4)]) > 0:
+                self.log.error("Udp buffer contained more data than excpected")
             else:
                 self.log.warn("Could not parse direct message")
 
