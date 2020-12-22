@@ -9,16 +9,14 @@ from util.common import create_logger, json_size_struct
 
 
 @dataclass
-class AddedUser:
+class AddUser:
     user: User
     connection: socket
-    registered_users: List[User]
 
 
 @dataclass
-class RemovedUser:
+class RemoveUser:
     user: User
-    connection: socket
 
 
 class TcpOutgoing(Thread):
@@ -27,7 +25,7 @@ class TcpOutgoing(Thread):
         self.daemon = True
         self.log = create_logger("TcpOutgoingActor")
 
-        self.connections = []
+        self.connections = {}
         self.messages = []
         self.messages_lock = Lock()
 
@@ -51,9 +49,10 @@ class TcpOutgoing(Thread):
 
     def on_receive(self, message):
         message_type = type(message)
-        if message_type == RemovedUser:
+        if message_type == RemoveUser:
             self.log.info("Removing user from connections")
-            self.connections.remove(message.connection)
+            if message.user in self.connections:
+                self.connections.pop(message.user)
 
             self.log.info("Sharing closed connection")
             user_list = (
@@ -63,11 +62,11 @@ class TcpOutgoing(Thread):
             )
             user_list_size = json_size_struct.pack(len(user_list))
 
-            for connection in self.connections:
+            for _, connection in self.connections.items():
                 self.log.info("Sending data")
                 connection.sendall(user_list_size + user_list)
 
-        elif message_type == AddedUser:
+        elif message_type == AddUser:
             self.log.info("Sharing new user")
             user_list = (
                 UserList(AddedRemovedUsers([message.user], []))
@@ -76,12 +75,13 @@ class TcpOutgoing(Thread):
             )
             user_list_size = json_size_struct.pack(len(user_list))
 
-            for connection in self.connections:
+            for _, connection in self.connections.items():
                 self.log.info("Sending data")
                 connection.sendall(user_list_size + user_list)
 
+            # Send user list to new user
             new_user_message = (
-                UserList(AddedRemovedUsers(message.registered_users, []))
+                UserList(AddedRemovedUsers(self.connections.keys(), []))
                 .to_json()
                 .encode("utf-8")
             )
@@ -90,12 +90,12 @@ class TcpOutgoing(Thread):
             )
 
             self.log.info("Adding new connection")
-            self.connections.append(message.connection)
+            self.connections[message.user] = message.connection
 
         elif message_type == Broadcast:
             broadcast = message.to_json().encode("utf-8")
             broadcast_length = json_size_struct.pack(len(broadcast))
-            for connection in self.connections:
+            for _, connection in self.connections.items():
                 connection.sendall(broadcast_length + broadcast)
         else:
             self.log.error(f"Cannot handle messages of type {type(message)}")

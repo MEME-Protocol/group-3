@@ -11,6 +11,14 @@ class User:
     ip: str
     port: int
 
+    def __hash__(self):
+        return int.from_bytes(
+            self.nickname.encode("utf-8")
+            + self.ip.encode("utf-8")
+            + (self.port).to_bytes(10, byteorder="big"),
+            byteorder='big'
+        )
+
 
 @dataclass_json
 @dataclass

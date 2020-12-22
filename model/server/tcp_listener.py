@@ -4,26 +4,28 @@ from select import select
 from threading import Event, Lock, Thread
 
 from util.common import create_logger, json_size_struct
-from util.registrar import Registrar
 
-from model.register import Register
+from model.server.tcp_outgoing import TcpOutgoing, AddUser, RemoveUser
 from model.unregister import Unregister
+from model.register import Register
 from model.user_list import User
 from model.broadcast import Broadcast
 
 
 class TcpListener(Thread):
-    def __init__(self, connection):
+    def __init__(self, connection, tcp_outgoing: TcpOutgoing):
         super().__init__()
         self.daemon = True
         self.connection = connection
-        self.connection.settimeout(2)
-        self.log = create_logger(
-            f"tcp-connection-logger-{ Registrar.register_thread() }"
-        )
+        self.log = create_logger("tcp-connection-logger")
+        self.user = None
+        self.tcp_outgoing = tcp_outgoing
+
+    # todo: Remove map register outgoing connection with tcp_outgoing
+    # todo: Send register, unregister and broadcast directly to tcp outgoing
 
     def run(self):
-        while not Registrar.shutdown_requested():
+        while True:
             if not (size := self.receive_json_size()):
                 break
 
@@ -37,26 +39,27 @@ class TcpListener(Thread):
 
         self.log.info("Closing connection to client")
         self.connection.close()
-        Registrar.deregister_thread()
 
     def handle_command(self, command):
-        if type(command) is Unregister:
-            user = Registrar.retrieve_user(command.nickname)
-            Registrar.deregister_user(user, self.connection)
-            self.log.info(f"Deregistered user {user}")
+        if type(command) is Register:
+            self.user = User(command.nickname, command.ip, command.port)
+            self.tcp_outgoing.tell(AddUser(self.user, self.connection))
+            self.log.info(f"Registered user {self.user}")
+
+        elif type(command) is Unregister:
+            self.tcp_outgoing.tell(RemoveUser(self.user))
+            self.log.info(f"Deregistered user {self.user}")
             return type(command)
-        elif type(command) is Register:
-            user = User(command.nickname, command.ip, command.port)
-            Registrar.register_user(user, self.connection)
-            self.log.info(f"Registered user {user}")
+
         elif type(command) is Broadcast:
-            Registrar.broadcast_message(command)
             self.log.warn(f"Broadcasting message: ({command})")
+            self.tcp_outgoing.tell(command)
+
         else:
             self.log.warn(f"Can not execute command {command}")
 
     def receive_json_size(self):
-        while not Registrar.shutdown_requested():
+        while True:
             try:
                 buffer = self.connection.recv(4)
                 if len(buffer) == 0:
