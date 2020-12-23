@@ -4,8 +4,8 @@ import sys
 from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, setdefaulttimeout, socket, timeout
 from threading import Thread
 
-from model.server.tcp_outgoing import TcpOutgoing
 from model.server.tcp_listener import TcpListener
+from model.server.tcp_outgoing import TcpOutgoing
 from util.common import create_logger
 
 
@@ -34,8 +34,6 @@ def wait_for_tcp_connection():
             TcpListener(connection, tcp_outgoing).start()
     log.info("Stopped listening to tcp-connections")
 
-
-setdefaulttimeout(25)
 
 Thread(target=lambda: wait_for_tcp_connection(), daemon=True).start()
 

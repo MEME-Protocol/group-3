@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from socket import socket
+from threading import Lock, Thread
 from typing import List
 
-from threading import Thread, Lock
-from model.user_list import AddedRemovedUsers, User, UserList
 from model.broadcast import Broadcast
+from model.user_list import AddedRemovedUsers, User, UserList
 from util.common import create_logger, json_size_struct
 
 
@@ -32,7 +32,7 @@ class TcpOutgoing(Thread):
     def run(self):
         while True:
             if (message := self.get_message()):
-                self.on_receive(message)
+                self.handle_message(message)
 
     def tell(self, message):
         self.messages_lock.acquire()
@@ -47,55 +47,51 @@ class TcpOutgoing(Thread):
         self.messages_lock.release()
         return message
 
-    def on_receive(self, message):
+    def handle_message(self, message):
         message_type = type(message)
         if message_type == RemoveUser:
-            self.log.info("Removing user from connections")
-            if message.user in self.connections:
-                self.connections.pop(message.user)
-
-            self.log.info("Sharing closed connection")
-            user_list = (
-                UserList(AddedRemovedUsers([], [message.user]))
-                .to_json()
-                .encode("utf-8")
-            )
-            user_list_size = json_size_struct.pack(len(user_list))
-
-            for _, connection in self.connections.items():
-                self.log.info("Sending data")
-                connection.sendall(user_list_size + user_list)
-
+            self.remove_user(message)
         elif message_type == AddUser:
-            self.log.info("Sharing new user")
-            user_list = (
-                UserList(AddedRemovedUsers([message.user], []))
-                .to_json()
-                .encode("utf-8")
-            )
-            user_list_size = json_size_struct.pack(len(user_list))
-
-            for _, connection in self.connections.items():
-                self.log.info("Sending data")
-                connection.sendall(user_list_size + user_list)
-
-            # Send user list to new user
-            new_user_message = (
-                UserList(AddedRemovedUsers(self.connections.keys(), []))
-                .to_json()
-                .encode("utf-8")
-            )
-            message.connection.sendall(
-                json_size_struct.pack(len(new_user_message)) + new_user_message
-            )
-
-            self.log.info("Adding new connection")
-            self.connections[message.user] = message.connection
-
+            self.add_user(message)
         elif message_type == Broadcast:
-            broadcast = message.to_json().encode("utf-8")
-            broadcast_length = json_size_struct.pack(len(broadcast))
-            for _, connection in self.connections.items():
-                connection.sendall(broadcast_length + broadcast)
+            self.handle_broadcast(message)
         else:
             self.log.error(f"Cannot handle messages of type {type(message)}")
+
+    def handle_broadcast(self, broadcast: Broadcast):
+        broadcast = broadcast.to_json().encode("utf-8")
+        broadcast_length = json_size_struct.pack(len(broadcast))
+        for _, connection in self.connections.items():
+            connection.sendall(broadcast_length + broadcast)
+
+    def add_user(self, add_user: AddUser):
+        self.log.info("Sharing newly added user to clients")
+        self.send_user_list(UserList(AddedRemovedUsers([add_user.user], [])))
+
+        self.log.info("Sharing all clients to new user")
+        new_user_message = (
+            UserList(AddedRemovedUsers(self.connections.keys(), []))
+            .to_json()
+            .encode("utf-8")
+        )
+        add_user.connection.sendall(
+            json_size_struct.pack(len(new_user_message)) + new_user_message
+        )
+
+        self.connections[message.user] = add_user.connection
+        self.log.info("Added new user to client-connections")
+
+    def remove_user(self, remove_user: RemoveUser):
+        self.log.info("Removing user from client-connections")
+        if remove_user.user in self.connections:
+            self.connections.pop(remove_user.user)
+
+        self.log.info("Sharing removed user to client-connections")
+        self.send_user_list(UserList(AddedRemovedUsers([], [remove_user.user])))
+
+    def send_user_list(self, user_list: UserList):
+        user_list_b = user_list.to_json().encode("utf-8")
+        user_list_size_b = json_size_struct.pack(len(user_list))
+
+        for _, connection in self.connections.items():
+            connection.sendall(user_list_size_b + user_list_b)

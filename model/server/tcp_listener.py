@@ -3,13 +3,12 @@ import struct
 from select import select
 from threading import Event, Lock, Thread
 
-from util.common import create_logger, json_size_struct
-
-from model.server.tcp_outgoing import TcpOutgoing, AddUser, RemoveUser
-from model.unregister import Unregister
-from model.register import Register
-from model.user_list import User
 from model.broadcast import Broadcast
+from model.register import Register
+from model.server.tcp_outgoing import AddUser, RemoveUser, TcpOutgoing
+from model.unregister import Unregister
+from model.user_list import User
+from util.common import create_logger, json_size_struct
 
 
 class TcpListener(Thread):
@@ -20,9 +19,6 @@ class TcpListener(Thread):
         self.log = create_logger("tcp-connection-logger")
         self.user = None
         self.tcp_outgoing = tcp_outgoing
-
-    # todo: Remove map register outgoing connection with tcp_outgoing
-    # todo: Send register, unregister and broadcast directly to tcp outgoing
 
     def run(self):
         while True:
@@ -41,22 +37,23 @@ class TcpListener(Thread):
         self.connection.close()
 
     def handle_command(self, command):
-        if type(command) is Register:
+        command_type = type(command)
+        if command_type is Register:
             self.user = User(command.nickname, command.ip, command.port)
             self.tcp_outgoing.tell(AddUser(self.user, self.connection))
             self.log.info(f"Registered user {self.user}")
 
-        elif type(command) is Unregister:
+        elif command_type is Unregister:
             self.tcp_outgoing.tell(RemoveUser(self.user))
             self.log.info(f"Deregistered user {self.user}")
-            return type(command)
+            return command_type
 
-        elif type(command) is Broadcast:
+        elif command_type is Broadcast:
             self.log.warn(f"Broadcasting message: ({command})")
             self.tcp_outgoing.tell(command)
 
         else:
-            self.log.warn(f"Can not execute command {command}")
+            self.log.warn(f"Can not execute command {command_type}")
 
     def receive_json_size(self):
         while True:
