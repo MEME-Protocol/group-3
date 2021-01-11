@@ -78,7 +78,7 @@ class TcpOutgoing(Thread):
             json_size_struct.pack(len(new_user_message)) + new_user_message
         )
 
-        self.connections[message.user] = add_user.connection
+        self.connections[add_user.user] = add_user.connection
         self.log.info("Added new user to client-connections")
 
     def remove_user(self, remove_user: RemoveUser):
@@ -91,7 +91,7 @@ class TcpOutgoing(Thread):
 
     def send_user_list(self, user_list: UserList):
         user_list_b = user_list.to_json().encode("utf-8")
-        user_list_size_b = json_size_struct.pack(len(user_list))
+        user_list_size_b = json_size_struct.pack(len(user_list_b))
 
         for _, connection in self.connections.items():
             connection.sendall(user_list_size_b + user_list_b)
